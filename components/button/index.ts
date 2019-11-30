@@ -1,72 +1,66 @@
-import { html, directive } from 'lit-html';
-import {MDCRipple} from '@material/ripple';
+import { customElement, html, LitElement, property, query } from 'lit-element';
 import { classMap } from 'lit-html/directives/class-map';
-import { registerConnectedCallback } from '../common/render';
+import {MDCRipple} from '@material/ripple';
 
-interface ButtonOptions {
-  id: string,
-  classes: Object,
-  label: string,
-  iconName: string,
-  trailingIconName: string,
-  raised: boolean,
-  unelevated: boolean,
-  outlined: boolean,
-  onClick: Function,
-};
+@customElement('mdc-button')
+export class Button extends LitElement {
+  @property({type: String})
+  icon = '';
 
-interface IconOptions {
-  classes: Object,
-  iconName: string,
-}
+  @property({type: String})
+  trailingIcon = '';
 
-interface IconButtonOptions {
-  classes: Object,
-  iconName: string,
-  onClick: Function,
-}
+  @property({type: String})
+  label = '';
 
-export const icon = ({classes, iconName}: Partial<IconOptions> = {}) => {
-  if (!iconName) {
-    return null;
+  @property({type: String})
+  classes  = '';
+
+  @property({type: Boolean})
+  unelevated = false
+
+  @property({type: Boolean})
+  outlined = false
+
+  @property({type: Boolean})
+  raised = false
+
+  @query('.mdc-button')
+  root: HTMLElement
+
+  createRenderRoot() {
+    return this;
   }
 
-  const rootClasses = classMap(Object.assign({
-    'material-icons': true,
-    'mdc-button__icon': true,
-  }, classes));
+  get rootClasses() {
+    return classMap({
+      'mdc-button': true,
+      'mdc-button--raised': this.raised,
+      'mdc-button--unelevated': this.unelevated,
+      'mdc-button--outlined': this.outlined,
+      ...this.classes && {[this.classes]: true},
+    });
+  }
 
-  return html`
-    <span aria-hidden="true" class=${rootClasses}>${iconName}</span>
-  `;
-}
+  getIconTemplate(icon) {
+    if (!icon) {
+      return null;
+    }
 
-const initRipple = directive(() => (part) => {
-  registerConnectedCallback(() => MDCRipple.attachTo(part.committer.element));
-});
+    return html`<span aria-hidden="true" class="material-icons mdc-button__icon">${icon}</span>`;
+  }
 
-export const button = ({classes, label, iconName, trailingIconName, raised, unelevated, outlined, onClick, id}: Partial<ButtonOptions> = {}) => {
-  const rootClasses = classMap(Object.assign({
-    'mdc-button': true,
-    'mdc-button--raised': !!raised,
-    'mdc-button--unelevated': !!unelevated,
-    'mdc-button--outlined': !!outlined,
-  }, classes));
+  firstUpdated() {
+    MDCRipple.attachTo(this.root);
+  }
 
-  return html`
-    <button @click=${onClick} id=${id} class=${rootClasses} .onRender=${initRipple()}>
-      <div class="mdc-button__ripple"></div>
-      ${icon({iconName})}
-      <span class="mdc-button__label">${label}</span>
-      ${icon({iconName: trailingIconName})}
-    </button>`;
-}
-
-export const iconButton = ({classes, iconName, onClick}: Partial<IconButtonOptions>) => {
-  const rootClasses = classMap(Object.assign({
-    'mdc-icon-button': true,
-    'material-icons': true,
-  }, classes));
-
-  return html`<button @click=${onClick} class=${rootClasses}>${iconName}</button>`;
+  render() {
+    return html`
+      <button class=${this.rootClasses}>
+        <div class="mdc-button__ripple"></div>
+        ${this.getIconTemplate(this.icon)}
+        <span class="mdc-button__label">${this.label}</span>
+        ${this.getIconTemplate(this.trailingIcon)}
+      </button>`;
+  }
 }

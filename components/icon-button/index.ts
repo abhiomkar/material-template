@@ -1,30 +1,40 @@
-import { html, directive } from 'lit-html';
-import {MDCRipple} from '@material/ripple';
+import { customElement, html, LitElement, property, query } from 'lit-element';
 import { classMap } from 'lit-html/directives/class-map';
-import { registerConnectedCallback } from '../common/render';
+import {MDCRipple} from '@material/ripple';
 
-interface IconButtonOptions {
-  iconName: string,
-  ariaLabel: string,
-  classes: Object,
-  onClick: Function,
-}
+@customElement('mdc-icon-button')
+export class IconButton extends LitElement {
+  @property({type: String})
+  icon = '';
 
-const initRipple = directive(() => (part) => {
-  registerConnectedCallback(() => {
-    const ripple = MDCRipple.attachTo(part.committer.element);
-    ripple.unbounded = true;
-  });
-});
+  @property({type: String})
+  ariaLabel = '';
 
-export const iconButton = ({iconName, ariaLabel, classes, onClick}: Partial<IconButtonOptions> = {}) => {
-  const rootClasses = classMap(Object.assign({}, {
+  @query('.mdc-icon-button')
+  root: HTMLElement;
+
+  private ripple: MDCRipple;
+
+  get rootClasses() {
+    return classMap({
       'mdc-icon-button': true,
       'material-icons': true,
-  }, classes));
+    });
+  }
 
-  return html`
-  <button class=${rootClasses} aria-label=${ariaLabel} @click=${onClick} .onRender=${initRipple()}>
-    ${iconName}
-  </button>`;
+  createRenderRoot() {
+    return this;
+  }
+
+  firstUpdated() {
+    const ripple = MDCRipple.attachTo(this.root);
+    ripple.unbounded = true;
+  }
+
+  render() {
+    return html`
+      <button class=${this.rootClasses}} aria-label=${this.ariaLabel}>
+        ${this.icon}
+      </button>`;
+  }
 }

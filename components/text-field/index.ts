@@ -1,146 +1,168 @@
-import { html, directive } from 'lit-html';
+import { customElement, html, LitElement, property, query } from 'lit-element';
+import {MDCTextField} from '@material/textfield';
 import { classMap } from 'lit-html/directives/class-map';
-import { MDCTextField } from '@material/textfield';
 import { getId } from '../common/util';
-import { registerConnectedCallback } from '../common/render';
 
-interface TextFieldOptions {
-  id: string,
-  label: string,
-  placeholder: string,
-  classes: Object,
-  leadingIconName: string,
-  trailingIconName: string,
-  value: string,
-  ariaLabel: string,
-  outlined: boolean,
-  helperText: string,
-  characterLimit: number,
-  onInput: Function,
-}
+@customElement('mdc-text-field')
+export class TextField extends LitElement {
+  @property({type: String})
+  label = '';
 
-interface InputOptions {
-  labelId: string,
-  ariaLabel: string,
-  placeholder: string,
-  value: string,
-  characterLimit: number,
-  onInput: Function,
-}
+  @property({type: String})
+  placeholder  = '';
 
-const input = ({ labelId, ariaLabel, placeholder, value, characterLimit, onInput }: Partial<InputOptions> = {}) => {
-  return html`<input
-    type="text"
-    class="mdc-text-field__input"
-    id=${labelId}
-    aria-label=${ariaLabel || null}
-    placeholder=${placeholder || ''}
-    maxlength=${characterLimit || ''}
-    .value=${value || ''}
-    @input=${onInput}
-    />`;
-};
+  @property({type: String})
+  classes  = '';
 
-const initTextField = directive(() => (part) => {
-  registerConnectedCallback(() => MDCTextField.attachTo(part.committer.element));
-});
+  @property({type: String})
+  icon  = '';
 
-export const textField = ({ classes, outlined, leadingIconName, trailingIconName, ariaLabel, placeholder, helperText, label, value, characterLimit, onInput }: Partial<TextFieldOptions> = {}) => {
-  const rootClasses = classMap(Object.assign({}, {
-    'mdc-text-field': true,
-    'mdc-text-field--default': !outlined,
-    'mdc-text-field--outlined': outlined,
-    'mdc-text-field--with-leading-icon': !!leadingIconName,
-    'mdc-text-field--with-trailing-icon': !!trailingIconName,
-    'mdc-text-field--no-label': !label,
-  }, classes));
-  const labelId = getId();
-  const floatingLabelClasses = classMap({
-    'mdc-floating-label': true,
-    'mdc-floating-label--float-above': !!value,
-  });
-  const notchedOutlineClasses = classMap({
-    'mdc-notched-outline': true,
-    'mdc-notched-outline--notched': !!value,
-  })
+  @property({type: String})
+  trailingIcon  = '';
 
-  if (outlined) {
-    const labelTemplate = html`<label class=${floatingLabelClasses}>${label}</label>`;
+  @property({type: String})
+  value  = '';
+
+  @property({type: String})
+  ariaLabel = '';
+
+  @property({type: Boolean})
+  outlined = false;
+
+  @property({type: String})
+  helperText = '';
+
+  @property({type: Number})
+  maxLength: number;
+
+  @query('.mdc-text-field')
+  root: HTMLElement;
+
+  private labelId = getId();
+
+  createRenderRoot() {
+    return this;
+  }
+
+  firstUpdated() {
+    MDCTextField.attachTo(this.root);
+  }
+
+  get inputTemplate() {
+    return html`<input
+      type="text"
+      class="mdc-text-field__input"
+      id=${this.labelId}
+      aria-label=${this.ariaLabel || null}
+      placeholder=${this.placeholder || ''}
+      maxlength=${this.maxLength || ''}
+      .value=${this.value || ''}
+      />`
+  }
+
+  get rootClasses() {
+    return classMap(Object.assign({}, {
+      'mdc-text-field': true,
+      'mdc-text-field--default': !this.outlined,
+      'mdc-text-field--outlined': this.outlined,
+      'mdc-text-field--with-leading-icon': !!this.icon,
+      'mdc-text-field--with-trailing-icon': !!this.trailingIcon,
+      'mdc-text-field--no-label': !this.label,
+      ...this.classes && {[this.classes]: true},
+    }));
+  }
+
+  get floatingLabelClasses() {
+    return classMap({
+      'mdc-floating-label': true,
+      'mdc-floating-label--float-above': !!this.value,
+    });
+  }
+
+  get notchedOutlineClasses() {
+    return classMap({
+      'mdc-notched-outline': true,
+      'mdc-notched-outline--notched': !!this.value,
+    });
+  }
+
+  get helperLineTemplate() {
+    if (!(this.helperText || this.maxLength)) {
+      return null;
+    }
 
     return html`
+      <div class="mdc-text-field-helper-line">
+        <div class="mdc-text-field-helper-text mdc-text-field-helper-text--persistent">${this.helperText}</div>
+        ${this.characterCounterTemplate}
+      </div>`;
+  }
+
+  get characterCounterTemplate() {
+    if (!this.maxLength) {
+      return null;
+    }
+    const length = this.value ? this.value.length : 0;
+    const counter = `${length} / ${this.maxLength}`;
+
+    return html`<div class="mdc-text-field-character-counter">${counter}</div>`;
+  }
+
+  getIconTemplate(icon, isButton = false) {
+    if (!icon) {
+      return null;
+    }
+
+    return html`<span
+      class="material-icons mdc-text-field__icon"
+      tabindex=${isButton ? 0 : null}
+      role=${isButton ? 'button' : null}>
+        ${icon}
+      </span>`;
+  };
+
+  get labelTemplate() {
+    return html`<label class=${this.floatingLabelClasses}>${this.label}</label>`;
+  }
+
+  get outlinedTemplate() {
+    return html`
     <div class="mdc-text-field-container">
-      <div class=${rootClasses} .onRender=${initTextField()}>
-        ${icon({ iconName: leadingIconName })}
-        ${input({ labelId, ariaLabel, placeholder, value, characterLimit, onInput })}
-        ${icon({ iconName: trailingIconName })}
-        <div class=${notchedOutlineClasses}>
+      <div class=${this.rootClasses}>
+        ${this.getIconTemplate(this.icon)}
+        ${this.inputTemplate}
+        ${this.getIconTemplate(this.trailingIcon)}
+        <div class=${this.notchedOutlineClasses}>
           <div class="mdc-notched-outline__leading"></div>
           <div class="mdc-notched-outline__notch">
-            ${label ? labelTemplate : null}
+            ${this.label ? this.labelTemplate : null}
           </div>
           <div class="mdc-notched-outline__trailing"></div>
         </div>
       </div>
-      ${helperLine({ helperText, characterLimit, value })}
+      ${this.helperLineTemplate}
     </div>`
-  } else {
+  }
+
+  get filledTemplate() {
     return html`
     <div class="mdc-text-field-container">
-      <div class=${rootClasses} .onRender=${initTextField()}>
-        ${icon({ iconName: leadingIconName })}
-        ${input({ labelId, ariaLabel, placeholder, value, characterLimit, onInput })}
-        <label class=${floatingLabelClasses} for=${labelId}>${label}</label>
-        ${icon({ iconName: trailingIconName })}
+      <div class=${this.rootClasses}>
+        ${this.getIconTemplate(this.icon)}
+        ${this.inputTemplate}
+        ${this.label ? this.labelTemplate : null}
+        ${this.getIconTemplate(this.trailingIcon)}
         <div class="mdc-line-ripple"></div>
       </div>
-      ${helperLine({ helperText, characterLimit, value })}
+      ${this.helperLineTemplate}
     </div>`;
   }
-}
 
-interface IconOptions {
-  iconName: string,
-  isButton: boolean,
-}
-
-const icon = ({ iconName, isButton }: Partial<IconOptions> = {}) => {
-  if (!iconName) {
-    return null;
+  render() {
+    if (this.outlined) {
+      return this.outlinedTemplate;
+    } else {
+      return this.filledTemplate;
+    }
   }
-
-  return html`<span
-    class="material-icons mdc-text-field__icon"
-    tabindex=${isButton ? 0 : null}
-    role=${isButton ? 'button' : null}>
-      ${iconName}
-    </span>`;
-};
-
-interface HelperLineOptions {
-  helperText: string,
-  characterLimit: number,
-  value: string,
-}
-
-const helperLine = ({ helperText, characterLimit, value }: Partial<HelperLineOptions> = {}) => {
-  return html`
-<div class="mdc-text-field-helper-line">
-  <div class="mdc-text-field-helper-text mdc-text-field-helper-text--persistent">${helperText}</div>
-  ${characterCounter({ characterLimit, value })}
-</div>`;
-};
-
-interface CharacterCounterOptions {
-  characterLimit: number,
-  value: string,
-}
-
-const characterCounter = ({ characterLimit, value }: Partial<CharacterCounterOptions> = {}) => {
-  if (!characterLimit) {
-    return null;
-  }
-  const length = value ? value.length : 0;
-  const counter = `${length} / ${characterLimit}`;
-
-  return html`<div class="mdc-text-field-character-counter">${counter}</div>`;
 }
